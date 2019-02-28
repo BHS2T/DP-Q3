@@ -2,7 +2,11 @@ package dp.q3;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 import java.util.List;
+import java.util.ServiceLoader;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.*;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
@@ -11,6 +15,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 public class Display implements ActionListener, TreeSelectionListener {
 
     Employee CEO;
+    String zBoss;
     JScrollPane jScrollPane;
     JTree jTree;
     String selectedRole;
@@ -20,24 +25,29 @@ public class Display implements ActionListener, TreeSelectionListener {
     JButton addEmployeeBtn;
     Employee selectedEmployee;
 
-    public Display() {
+    public Display() throws IOException {
+//        File f = new File("employeeList.txt");
+//        if(f.exists()){
+//            f.delete();
+//        }
         //Initialize 
-        CEO = new Employee("Samri", 30000, "CEO");
-        Employee vpProd = new Employee("Tsiyon", 25000, "Production Head");
-        Employee vpMkt = new Employee("Hilinish", 2500, "Marketing Head");
-        CEO.add(vpProd);
-        CEO.add(vpMkt);
-        Employee slsMgr = new Employee("Abeba", 20000, "Sales");
-        vpProd.add(slsMgr);
-        Employee slsAss = new Employee("Zenabu", 15000, "Salses Assistant");
-        slsMgr.add(slsAss);
+        CEO = new Employee("Samri", 30000, "CEO", "ME");
+//        Employee vpProd = new Employee("Tsiyon", 25000, "Production Head", "CEO");
+//        Employee vpMkt = new Employee("Hilinish", 2500, "Marketing Head","CEO");
+//        CEO.add(vpProd);
+//        CEO.add(vpMkt);
+//        Employee slsMgr = new Employee("Abeba", 20000, "Sales","Production Head");
+//        vpProd.add(slsMgr);
+//        Employee slsAss = new Employee("Zenabu", 15000, "Salses Assistant","Sales");
+//        slsMgr.add(slsAss);
 
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         Display display = new Display();
         display.displayTree();
-
+        
+        
     }
 
     public void displayTree() {
@@ -46,8 +56,8 @@ public class Display implements ActionListener, TreeSelectionListener {
         jFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         DefaultMutableTreeNode top = new DefaultMutableTreeNode(CEO.role);
+        
         createNodes(top, CEO);
-
         jTree = new JTree(top);
         jScrollPane = new JScrollPane(jTree);
         jScrollPane.setBounds(20, 30, 310, 340);
@@ -124,17 +134,42 @@ public class Display implements ActionListener, TreeSelectionListener {
     @Override
     public void actionPerformed(ActionEvent ae) {
         if (ae.getSource() == addEmployeeBtn) {
+            String roleS,nameS,bossS;
+            float salaryS;
+            roleS =role.getText();
+            nameS = name.getText();
+            
+            salaryS = Float.parseFloat(salary.getText());
+                    
+            Employee emp = new Employee(nameS,salaryS,roleS,zBoss);
+            Employee.add(emp);
+            
+            try {
+                Display prov = Display.getDefault();
+                //jTree.repaint();
+//        jFrame.remove(jScrollPane);
+                //DefaultMutableTreeNode top = new DefaultMutableTreeNode(CEO.role);
+            } catch (IOException ex) {
+                Logger.getLogger(Display.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        
+        //createNodes(top, CEO);
+        //jTree = new JTree(top);
+        //jScrollPane = new JScrollPane(jTree);
+        //jScrollPane.setBounds(20, 30, 310, 340);
+        //jFrame.add(jScrollPane);
 
             totalSalaryLbl.setText("button clicked");
+            
         }
     }
 
     private void createNodes(DefaultMutableTreeNode top, Employee empl) {
-        List<Employee> subordinates = empl.getSubordinates();
+        List<Employee> subordinates = empl.getSubordinates(empl.role);
         for (Employee emp : subordinates) {
             DefaultMutableTreeNode dmtn = new DefaultMutableTreeNode(emp.role);
             top.add(dmtn);
-            subordinates = emp.getSubordinates();
+           // subordinates = emp.getSubordinates(empl.role);
             createNodes(dmtn, emp);
         }
 
@@ -148,10 +183,26 @@ public class Display implements ActionListener, TreeSelectionListener {
         } else {
             Object nodeInfo = node.getUserObject();
             System.out.println("Role: " + nodeInfo);
-
+            Employee e = Employee.getEmpByRole(node.toString().trim());
+            float sal = e.getSalaries(e.role);
+            System.out.println();
+                   totalSalaryLbl.setText(Float.toString(sal));
+            zBoss = node.toString();
         }
-        totalSalaryLbl.setText(node.toString());
+//        totalSalaryLbl.setText(node.toString());
+ 
 
+    }
+    public static Display getDefault() throws IOException{
+        ServiceLoader<Display> sl = ServiceLoader.load(Display.class);
+        Display disp = new Display();
+        disp.displayTree();
+        
+        sl.reload();
+        for(Display dis:sl){
+            disp = dis;
+        }
+        return disp;
     }
 
 }
